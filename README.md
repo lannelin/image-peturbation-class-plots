@@ -19,6 +19,7 @@ TODO:
 - supply own image
 - display image, peturbed images
 - documentation
+- batching
 
 install project then:
 
