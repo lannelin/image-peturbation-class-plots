@@ -21,10 +21,16 @@ TODO:
 - documentation
 - batching
 
-install project then:
+install project
 
 ```bash
-python pixel_plot.py
+pip install -e .
+```
+
+then:
+
+```bash
+python pixel_plot.py --help
 ```
 
 ## dev
