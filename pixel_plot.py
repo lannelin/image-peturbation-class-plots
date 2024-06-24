@@ -152,6 +152,7 @@ def peturb_and_predict(
     model: torch.nn.Module,
     grid_size: int,
     label: int,
+    device: str,
     scale_factor: float = 1.0,
 ) -> tuple[
     Int[torch.Tensor, "{grid_size} {grid_size}"],
@@ -170,7 +171,7 @@ def peturb_and_predict(
     # sanity check
     with torch.inference_mode():
         x = CIFAR_TRANSFORM(image)
-        scores = model(x.unsqueeze(0).to("mps"))
+        scores = model(x.unsqueeze(0).to(device))
         prediction = torch.argmax(scores).detach().cpu()
         assert (
             prediction == label
@@ -196,33 +197,36 @@ def peturb_and_predict(
             x = CIFAR_TRANSFORM(permuted)
 
             with torch.inference_mode():
-                scores = model(x.unsqueeze(0).to("mps"))
+                scores = model(x.unsqueeze(0).to(device))
             prediction = torch.argmax(scores).detach().cpu().item()
             predictions[i, j] = prediction
 
     return predictions, x_direction, y_direction
 
 
-# specific to this project
 @beartype
 def main(
     cifar_root_dir: str,
     label: int,
     grid_size: int,
     scale_factor: float,
-    ckpt_fpath: str,
+    safetensors_fpath: str,
 ) -> None:
     img = load_first_cifar_image(cifar_root_dir=cifar_root_dir, label=label)
-    model = ResNet18.load_from_checkpoint(ckpt_fpath)
+
+    device = "mps"
+    model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
     """ evaluate image over grid of perturbations in two random directions.
     Saves (predictions,x_direction,y_direction) """
 
     model = model.eval()
+    model.to(device)
     predictions, x_direction, y_direction = peturb_and_predict(
         image=img,
         model=model,
         label=label,
         grid_size=grid_size,
+        device=device,
         scale_factor=scale_factor,
     )
 
@@ -288,9 +292,10 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
-        "--resnet_ckpt_fpath",
+        "--resnet_safetensors_fpath",
         type=str,
-        help="path to .ckpt for lightning_resnet.resnet18.ResNet18 model",
+        help="path to .safetensors for "
+        "lightning_resnet.resnet18.ResNet18 model",
         required=True,
     )
 
@@ -303,5 +308,5 @@ if __name__ == "__main__":
         label=args.cifar_label,
         grid_size=args.grid_size,
         scale_factor=args.scale_factor,
-        ckpt_fpath=args.resnet_ckpt_fpath,
+        safetensors_fpath=args.resnet_safetensors_fpath,
     )
