@@ -20,6 +20,9 @@ import torch
 from beartype import beartype
 from jaxtyping import Float, Int, jaxtyped
 from lightning import seed_everything
+from lightning.pytorch.trainer.connectors.accelerator_connector import (
+    _AcceleratorConnector,
+)
 from lightning_resnet.resnet18 import ResNet18
 from matplotlib import pyplot as plt
 from torchvision import transforms
@@ -214,7 +217,7 @@ def main(
 ) -> None:
     img = load_first_cifar_image(cifar_root_dir=cifar_root_dir, label=label)
 
-    device = "mps"
+    device = _AcceleratorConnector._choose_auto_accelerator()
     model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
     """ evaluate image over grid of perturbations in two random directions.
     Saves (predictions,x_direction,y_direction) """

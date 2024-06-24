@@ -4,7 +4,7 @@ version = "0.0.1"
 
 # TODO min,max
 dependencies = [
-    "lightning==2.2.5",
+    "lightning==2.3.0",
     "torch==2.3.1",
     "torchvision==0.18.1",
     "resnet-lightning @ git+https://github.com/lannelin/cifar10-resnet-lightning",
