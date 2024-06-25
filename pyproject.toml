@@ -22,10 +22,10 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-line-length = 80
+line-length = 79
 include = '\.pyi?$'
 
 [tool.isort]
 profile = "black"
-line_length = 80
+line_length = 79
 force_grid_wrap = 2

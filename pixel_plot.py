@@ -80,11 +80,11 @@ def main(
     grid_size: int,
     scale_factor: float,
     safetensors_fpath: str,
+    device: str,
+    batch_size: int,
     display_ims: bool,
 ) -> None:
     img = load_first_cifar_image(cifar_root_dir=cifar_root_dir, label=label)
-
-    device = _AcceleratorConnector._choose_auto_accelerator()
     model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
     """ evaluate image over grid of perturbations in two random directions.
     Saves (predictions,x_direction,y_direction,orig_img) """
@@ -98,6 +98,7 @@ def main(
         grid_size=grid_size,
         data_transform=CIFAR_TRANSFORM,
         device=device,
+        batch_size=batch_size,
         scale_factor=scale_factor,
     )
 
@@ -186,6 +187,20 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
+        "--device",
+        type=str,
+        help="device to run model on",
+        required=False,
+        default="auto",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        help="batch size",
+        required=False,
+        default=1,
+    )
+    parser.add_argument(
         "--display_ims",
         action=argparse.BooleanOptionalAction,
         help="visualise images in plot",
@@ -196,11 +211,18 @@ if __name__ == "__main__":
 
     seed_everything(args.random_seed)
 
+    if args.device == "auto":
+        device = _AcceleratorConnector._choose_auto_accelerator()
+    else:
+        device = args.device
+
     main(
         cifar_root_dir=args.cifar_root_dir,
         label=args.cifar_label,
         grid_size=args.grid_size,
         scale_factor=args.scale_factor,
         safetensors_fpath=args.resnet_safetensors_fpath,
+        device=device,
+        batch_size=args.batch_size,
         display_ims=display_ims,
     )
