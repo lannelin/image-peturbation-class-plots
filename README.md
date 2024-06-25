@@ -18,6 +18,7 @@ TODO:
 - supply own image
 - documentation
 - batching
+- adversarial directions
 
 install project
 
