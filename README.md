@@ -24,6 +24,7 @@ TODO:
 - supply own image
 - documentation
 - further exploration of adversarial directions
+- drop lightning dep?
 
 install project
 
