@@ -16,12 +16,8 @@ from lightning import Trainer
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from imclassplots.directions import (
-    get_orthogonal_1d_direction,
-    get_random_1d_direction,
-)
 
-
+@jaxtyped(typechecker=beartype)
 class PeturbationsDataset(Dataset):
     def __init__(
         self,
@@ -105,9 +101,9 @@ def peturb(
     scale_b: float,
 ) -> PIL.Image.Image:
     t = transforms.ToTensor()(img)
-    a_permute = (direction_a * scale_a).reshape(t.shape)
-    b_permute = (direction_b * scale_b).reshape(t.shape)
-    t = (t + a_permute + b_permute).clip(0, 1)
+    a_peturb = (direction_a * scale_a).reshape(t.shape)
+    b_peturb = (direction_b * scale_b).reshape(t.shape)
+    t = (t + a_peturb + b_peturb).clip(0, 1)
     return transforms.ToPILImage()(t)
 
 
@@ -121,22 +117,15 @@ def peturb_and_predict(
         [PIL.Image.Image],
         Float[torch.Tensor, " dim1 dim2 dim3"],
     ],
+    x_direction: Float[torch.Tensor, " dim4"],
+    y_direction: Float[torch.Tensor, " dim4"],
     device: str,
     batch_size: int,
     scale_factor: float = 1.0,
-) -> tuple[
-    Int[torch.Tensor, "{grid_size} {grid_size}"],
-    Float[torch.Tensor, " dim4"],
-    Float[torch.Tensor, " dim4"],
-]:
+) -> Int[torch.Tensor, "{grid_size} {grid_size}"]:
     """
     returns: Tuple[predictions, x_direction, y_direction]
     """
-
-    #  directions
-    im_size = image.height * image.width * len(image.getbands())
-    x_direction = get_random_1d_direction(size=im_size)
-    y_direction = get_orthogonal_1d_direction(u=x_direction)
 
     # sanity check
     with torch.inference_mode():
@@ -169,4 +158,4 @@ def peturb_and_predict(
         .T
     )
 
-    return predictions, x_direction, y_direction
+    return predictions

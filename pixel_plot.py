@@ -25,6 +25,11 @@ from matplotlib import pyplot as plt
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
+from imclassplots.directions import (
+    get_gradient_based_direction,
+    get_orthogonal_1d_direction,
+    get_random_1d_direction,
+)
 from imclassplots.peturb import (
     peturb,
     peturb_and_predict,
@@ -80,23 +85,45 @@ def main(
     grid_size: int,
     scale_factor: float,
     safetensors_fpath: str,
+    direction: str,
     device: str,
     batch_size: int,
     display_ims: bool,
 ) -> None:
     img = load_first_cifar_image(cifar_root_dir=cifar_root_dir, label=label)
     model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
-    """ evaluate image over grid of perturbations in two random directions.
+    """ evaluate image over grid of perturbations in two directions.
     Saves (predictions,x_direction,y_direction,orig_img) """
 
     model = model.eval()
     model.to(device)
-    predictions, x_direction, y_direction = peturb_and_predict(
+
+    #  directions
+    if direction == "random":
+        im_size = img.height * img.width * len(img.getbands())
+        x_direction = get_random_1d_direction(size=im_size)
+    elif direction == "gradient":
+        x_direction = get_gradient_based_direction(
+            model=model,
+            data_sample=CIFAR_TRANSFORM(img),
+            label=label,
+            device=device,
+        )
+    else:
+        raise ValueError(
+            f"direction must be random or gradient, not {direction}"
+        )
+
+    y_direction = get_orthogonal_1d_direction(u=x_direction)
+
+    predictions = peturb_and_predict(
         image=img,
         model=model,
         label=label,
         grid_size=grid_size,
         data_transform=CIFAR_TRANSFORM,
+        x_direction=x_direction,
+        y_direction=y_direction,
         device=device,
         batch_size=batch_size,
         scale_factor=scale_factor,
@@ -187,6 +214,12 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
+        "--direction",
+        type=str,
+        help="method to pick xdirection: random or gradient",
+        required=True,
+    )
+    parser.add_argument(
         "--device",
         type=str,
         help="device to run model on",
@@ -222,6 +255,7 @@ if __name__ == "__main__":
         grid_size=args.grid_size,
         scale_factor=args.scale_factor,
         safetensors_fpath=args.resnet_safetensors_fpath,
+        direction=args.direction,
         device=device,
         batch_size=args.batch_size,
         display_ims=display_ims,
