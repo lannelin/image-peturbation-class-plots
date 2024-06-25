@@ -88,6 +88,6 @@ def peturb_and_predict(
             with torch.inference_mode():
                 scores = model(x.unsqueeze(0).to(device))
             prediction = torch.argmax(scores).detach().cpu().item()
-            predictions[i, j] = prediction
+            predictions[j, i] = prediction
 
     return predictions, x_direction, y_direction

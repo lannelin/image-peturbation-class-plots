@@ -4,8 +4,7 @@ Plots CIFAR10 class predictions over peturbations of given image. X and Y axes d
 
 e.g.
 
-![image](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/205e1d2a-9a06-46c4-a996-8f9d2b2a924d)
-
+![horse_deer](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/936ab3eb-5a46-4a72-9dae-d47df61df8ea)
 
 (Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nicholas.carlini.com/slides/2023_adversarial_alignment.pdf)
 
@@ -17,7 +16,6 @@ This repo currently relies on having weights for a resnet18 model trained on CIF
 TODO:
 
 - supply own image
-- display image, peturbed images
 - documentation
 - batching
 

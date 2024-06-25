@@ -11,6 +11,7 @@ plots predictions
 
 import argparse
 import os
+from functools import partial
 
 import PIL
 import torch
@@ -20,10 +21,14 @@ from lightning.pytorch.trainer.connectors.accelerator_connector import (
     _AcceleratorConnector,
 )
 from lightning_resnet.resnet18 import ResNet18
+from matplotlib import pyplot as plt
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
-from imclassplots.peturb import peturb_and_predict
+from imclassplots.peturb import (
+    peturb,
+    peturb_and_predict,
+)
 from imclassplots.plot import plot_predictions
 
 CIFAR_TRANSFORM = transforms.Compose(
@@ -75,13 +80,14 @@ def main(
     grid_size: int,
     scale_factor: float,
     safetensors_fpath: str,
+    display_ims: bool,
 ) -> None:
     img = load_first_cifar_image(cifar_root_dir=cifar_root_dir, label=label)
 
     device = _AcceleratorConnector._choose_auto_accelerator()
     model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
     """ evaluate image over grid of perturbations in two random directions.
-    Saves (predictions,x_direction,y_direction) """
+    Saves (predictions,x_direction,y_direction,orig_img) """
 
     model = model.eval()
     model.to(device)
@@ -98,22 +104,39 @@ def main(
     plot_directory = "./plots"
     if not os.path.exists(plot_directory):
         os.makedirs(plot_directory)
-    fname = os.path.join(
+    data_fname = os.path.join(
         plot_directory,
         f"predictionsAndDirs_mirror_label"
         f"{label}_gridsize{grid_size}_sf{scale_factor}.pt",
     )
     torch.save(
-        (predictions, x_direction, y_direction),
-        fname,
+        (predictions, x_direction, y_direction, transforms.ToTensor()(img)),
+        data_fname,
     )
-    print(f"saved (predictions,x_direction,y_direction) tuple at {fname}")
+    print(f"saved (predictions,x_direction,y_direction) tuple at {data_fname}")
 
-    plot_predictions(
+    figure_fname = os.path.join(
+        plot_directory,
+        f"fig_{label}_gridsize{grid_size}_sf{scale_factor}.png",
+    )
+
+    im_gen_fn = (
+        partial(
+            peturb, img=img, direction_a=x_direction, direction_b=y_direction
+        )
+        if display_ims
+        else None
+    )
+    fig = plot_predictions(
         predictions=predictions,
         class_labels=CIFAR_CLASSES,
         true_image_label=label,
+        display_ims=display_ims,
+        im_generation_fn=im_gen_fn,
     )
+    fig.savefig(figure_fname)
+    print(f"saved figure at {figure_fname}")
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -162,8 +185,14 @@ if __name__ == "__main__":
         "lightning_resnet.resnet18.ResNet18 model",
         required=True,
     )
+    parser.add_argument(
+        "--display_ims",
+        action=argparse.BooleanOptionalAction,
+        help="visualise images in plot",
+    )
 
     args = parser.parse_args()
+    display_ims = True if args.display_ims else False  # rather than None
 
     seed_everything(args.random_seed)
 
@@ -173,4 +202,5 @@ if __name__ == "__main__":
         grid_size=args.grid_size,
         scale_factor=args.scale_factor,
         safetensors_fpath=args.resnet_safetensors_fpath,
+        display_ims=display_ims,
     )
