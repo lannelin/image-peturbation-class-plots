@@ -11,23 +11,20 @@ plots predictions
 
 import argparse
 import os
-from collections import OrderedDict
 
-import colorcet as cc
 import PIL
-import seaborn as sns
 import torch
 from beartype import beartype
-from jaxtyping import Float, Int, jaxtyped
 from lightning import seed_everything
 from lightning.pytorch.trainer.connectors.accelerator_connector import (
     _AcceleratorConnector,
 )
 from lightning_resnet.resnet18 import ResNet18
-from matplotlib import pyplot as plt
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
-from tqdm.auto import tqdm
+
+from imclassplots.peturb import peturb_and_predict
+from imclassplots.plot import plot_predictions
 
 CIFAR_TRANSFORM = transforms.Compose(
     [
@@ -71,142 +68,6 @@ def load_first_cifar_image(cifar_root_dir: str, label: int) -> PIL.Image.Image:
         raise Exception("didn't find a matching label in the data")
 
 
-@jaxtyped(typechecker=beartype)
-def get_random_1d_direction(size: int) -> Float[torch.Tensor, " {size}"]:
-    x = torch.randn(size)
-    return x / torch.linalg.norm(x)
-
-
-# gram schmidt
-@jaxtyped(typechecker=beartype)
-def get_orthogonal_1d_direction(
-    u: Float[torch.Tensor, " dim1"]
-) -> Float[torch.Tensor, " dim1"]:
-    v = torch.randn(u.shape[0])
-    proj_v = (torch.inner(v, u) / torch.inner(u, u)) * u
-    u2 = v - proj_v
-    u2 = u2 / torch.linalg.norm(u2)
-    # ensure that orthogonal
-    assert torch.isclose(torch.dot(u, u2), torch.tensor(0.0), atol=1e-6)
-    return u2
-
-
-@jaxtyped(typechecker=beartype)
-def permute(
-    img: PIL.Image.Image,
-    direction_a: Float[torch.Tensor, " dim1"],  # noqa:
-    direction_b: Float[torch.Tensor, " dim1"],
-    scale_a: float,
-    scale_b: float,
-) -> PIL.Image.Image:
-    t = transforms.ToTensor()(img)
-    a_permute = (direction_a * scale_a).reshape(t.shape)
-    b_permute = (direction_b * scale_b).reshape(t.shape)
-    t = (t + a_permute + b_permute).clip(0, 1)
-    return transforms.ToPILImage()(t)
-
-
-@jaxtyped(typechecker=beartype)
-def plot_predictions(
-    predictions: Int[torch.Tensor, " dim1 dim1"],
-    classes: list[str],
-    label: int,
-    grid_size: int,
-) -> None:
-    print(predictions)
-
-    # will modify predictions so clone
-    predictions = predictions.clone()
-
-    cifar_class_map = OrderedDict(enumerate(classes))
-    used_cifar_class_map = {
-        k: v for k, v in cifar_class_map.items() if k in predictions
-    }
-
-    prediction_value_mapping = {
-        val: i for i, val in enumerate(used_cifar_class_map.keys())
-    }
-
-    # inplace apply
-    predictions.apply_(lambda x: prediction_value_mapping[x])
-
-    n = len(used_cifar_class_map)
-
-    cmap = sns.color_palette(cc.glasbey, n)
-    start = -grid_size // 2
-    labels = list(range(start, start + grid_size))
-    ax = sns.heatmap(
-        predictions.numpy(), cmap=cmap, xticklabels=labels, yticklabels=labels
-    )
-    print(cmap)
-
-    colorbar = ax.collections[0].colorbar
-    r = colorbar.vmax - colorbar.vmin
-    # change offset
-    colorbar.set_ticks([colorbar.vmin + r / n * (0.5 + i) for i in range(n)])
-    colorbar.set_ticklabels(list(used_cifar_class_map.values()))
-    ax.set_title(f"peturbations of {classes[label]} example")
-    plt.show()
-
-
-@jaxtyped(typechecker=beartype)
-def peturb_and_predict(
-    image: PIL.Image.Image,
-    model: torch.nn.Module,
-    grid_size: int,
-    label: int,
-    device: str,
-    scale_factor: float = 1.0,
-) -> tuple[
-    Int[torch.Tensor, "{grid_size} {grid_size}"],
-    Float[torch.Tensor, " dim1"],
-    Float[torch.Tensor, " dim1"],
-]:
-    """
-    returns: Tuple[predictions, x_direction, y_direction]
-    """
-
-    #  directions
-    im_size = image.height * image.width * len(image.getbands())
-    x_direction = get_random_1d_direction(size=im_size)
-    y_direction = get_orthogonal_1d_direction(u=x_direction)
-
-    # sanity check
-    with torch.inference_mode():
-        x = CIFAR_TRANSFORM(image)
-        scores = model(x.unsqueeze(0).to(device))
-        prediction = torch.argmax(scores).detach().cpu()
-        assert (
-            prediction == label
-        ), f"test image: expected {label}, got {prediction}"
-
-    predictions = torch.zeros((grid_size, grid_size), dtype=torch.int8)
-
-    centre = grid_size // 2
-    # TODO batching
-    for i in tqdm(range(grid_size), leave=True):
-        x_coord = i - centre
-        for j in tqdm(range(grid_size), leave=False):
-            y_coord = j - centre
-
-            permuted = permute(
-                img=image,
-                direction_a=x_direction,
-                direction_b=y_direction,
-                scale_a=x_coord * scale_factor,
-                scale_b=y_coord * scale_factor,
-            )
-
-            x = CIFAR_TRANSFORM(permuted)
-
-            with torch.inference_mode():
-                scores = model(x.unsqueeze(0).to(device))
-            prediction = torch.argmax(scores).detach().cpu().item()
-            predictions[i, j] = prediction
-
-    return predictions, x_direction, y_direction
-
-
 @beartype
 def main(
     cifar_root_dir: str,
@@ -229,6 +90,7 @@ def main(
         model=model,
         label=label,
         grid_size=grid_size,
+        data_transform=CIFAR_TRANSFORM,
         device=device,
         scale_factor=scale_factor,
     )
@@ -249,9 +111,8 @@ def main(
 
     plot_predictions(
         predictions=predictions,
-        classes=CIFAR_CLASSES,
-        label=label,
-        grid_size=grid_size,
+        class_labels=CIFAR_CLASSES,
+        true_image_label=label,
     )
 
 
