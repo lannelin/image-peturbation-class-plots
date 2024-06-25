@@ -10,7 +10,7 @@ e.g.
 (Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nicholas.carlini.com/slides/2023_adversarial_alignment.pdf)
 
 
-This repo currently relies on having a ckpt file for a resnet18 model trained on CIFAR10 as per https://github.com/lannelin/cifar10-resnet-lightning
+This repo currently relies on having weights for a resnet18 model trained on CIFAR10 as per https://github.com/lannelin/cifar10-resnet-lightning. The example image was generated using weights that can be found in the [0.3.0 release](https://github.com/lannelin/cifar10-resnet-lightning/releases/tag/v0.3.0) of that repo.
 
 
 
