@@ -4,7 +4,13 @@ Plots CIFAR10 class predictions over peturbations of given image. X and Y axes d
 
 e.g.
 
+random:
 ![horse_deer](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/936ab3eb-5a46-4a72-9dae-d47df61df8ea)
+
+gradient:
+![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/fffe34bc-5372-420d-9fbd-fb7fe11e56e2)
+
+
 
 (Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nicholas.carlini.com/slides/2023_adversarial_alignment.pdf)
 
@@ -17,7 +23,7 @@ TODO:
 
 - supply own image
 - documentation
-- adversarial directions
+- further exploration of adversarial directions
 
 install project
 
