@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from beartype import beartype
+from beartype.typing import Callable
 from jaxtyping import (
     Float,
     jaxtyped,
@@ -30,19 +31,26 @@ def get_orthogonal_1d_direction(
 @jaxtyped(typechecker=beartype)
 def get_gradient_based_direction(
     model: torch.nn.Module,
-    data_sample: Float[torch.Tensor, " dim1 dim2 dim3"],
+    imtensor: Float[torch.Tensor, " dim1 dim2 dim3"],
+    normalize: Callable[
+        [Float[torch.Tensor, " dim1 dim2 dim3"]],
+        Float[torch.Tensor, " dim1 dim2 dim3"],
+    ],
     label: int,
     device: str,
 ) -> Float[torch.Tensor, " dim4"]:
+    """return (unit normed) gradient of loss wrt unnormalized image"""
     model.eval()
-    x = data_sample.unsqueeze(0).to(device)
-    x.requires_grad = True
+
+    imtensor = imtensor.unsqueeze(0).to(device)
+    imtensor.requires_grad = True
+    x = normalize(imtensor)
     logits = model(x)
     target = torch.tensor([label]).to(device)
     loss = F.nll_loss(logits, target)
     model.zero_grad()
     loss.backward()
 
-    grad = x.grad.data
+    grad = imtensor.grad.data
     d = grad.detach().cpu().reshape(-1)
     return d / torch.linalg.norm(d)

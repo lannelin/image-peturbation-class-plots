@@ -1,15 +1,15 @@
 # image-peturbation-class-plots
 
-Plots CIFAR10 class predictions over peturbations of given image. X and Y axes describe two random directions in pixel space.
+Plots CIFAR10 class predictions over peturbations of given image. X and Y axes describe two directions in pixel space.
 
 e.g.
 
-random:
-![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/08c48def-492d-41c6-aa27-7692d3d78083)
-
-
-gradient:
+random directions:
 ![horse_deer_random](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/90a4090a-b7a0-4569-b58d-97d91d6326a3)
+
+
+gradient-based x direction:
+![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/fa8f1add-5a77-48cd-a86b-d51fae440950)
 
 
 

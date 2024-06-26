@@ -35,21 +35,22 @@ from imclassplots.peturb import (
 )
 from imclassplots.plot import plot_predictions
 
+CIFAR_NORMALIZE = transforms.Normalize(
+    mean=[
+        0.4913725490196078,
+        0.4823529411764706,
+        0.4466666666666667,
+    ],
+    std=[
+        0.24705882352941178,
+        0.24352941176470588,
+        0.2615686274509804,
+    ],
+)
 CIFAR_TRANSFORM = transforms.Compose(
     [
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[
-                0.4913725490196078,
-                0.4823529411764706,
-                0.4466666666666667,
-            ],
-            std=[
-                0.24705882352941178,
-                0.24352941176470588,
-                0.2615686274509804,
-            ],
-        ),
+        CIFAR_NORMALIZE,
     ]
 )
 
@@ -97,7 +98,8 @@ def main(
     elif direction == "gradient":
         x_direction = get_gradient_based_direction(
             model=model,
-            data_sample=CIFAR_TRANSFORM(img),
+            imtensor=transforms.ToTensor()(img),
+            normalize=CIFAR_NORMALIZE,
             label=label,
             device=device,
         )
