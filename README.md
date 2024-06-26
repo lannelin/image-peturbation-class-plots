@@ -9,7 +9,8 @@ random directions:
 
 
 gradient-based x direction:
-![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/fa8f1add-5a77-48cd-a86b-d51fae440950)
+![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/0e63aa8e-a2dc-4d78-b79a-29d13c0ec838)
+
 
 
 
