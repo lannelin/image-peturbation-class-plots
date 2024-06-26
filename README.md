@@ -5,12 +5,27 @@ Plots CIFAR10 class predictions over peturbations of given image. X and Y axes d
 e.g.
 
 random:
-![horse_deer](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/936ab3eb-5a46-4a72-9dae-d47df61df8ea)
+![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/08c48def-492d-41c6-aa27-7692d3d78083)
+
 
 gradient:
-![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/fffe34bc-5372-420d-9fbd-fb7fe11e56e2)
+![horse_deer_random](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/90a4090a-b7a0-4569-b58d-97d91d6326a3)
 
 
+
+generated with:
+```bash
+python pixel_plot.py \
+    --image_fpath ./demo_images/horse.jpeg \
+    --cifar_label 7 \
+    --grid_size 20 \
+    --scale_factor 1.0 \
+    --resnet_safetensors_fpath [/path/to/model.safetensors] \
+    --display_ims \
+    --device auto \
+    --batch_size 32 \
+    --direction [random|gradient]
+```
 
 (Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nicholas.carlini.com/slides/2023_adversarial_alignment.pdf)
 
@@ -21,7 +36,7 @@ This repo currently relies on having weights for a resnet18 model trained on CIF
 
 TODO:
 
-- supply own image
+- SCALE FACTOR for non 1.0 seems broken
 - documentation
 - further exploration of adversarial directions
 - drop lightning dep?

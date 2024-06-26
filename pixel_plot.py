@@ -23,7 +23,6 @@ from lightning.pytorch.trainer.connectors.accelerator_connector import (
 from lightning_resnet.resnet18 import ResNet18
 from matplotlib import pyplot as plt
 from torchvision import transforms
-from torchvision.datasets import CIFAR10
 
 from imclassplots.directions import (
     get_gradient_based_direction,
@@ -69,18 +68,8 @@ CIFAR_CLASSES = [
 
 
 @beartype
-def load_first_cifar_image(cifar_root_dir: str, label: int) -> PIL.Image.Image:
-    data = CIFAR10(root=cifar_root_dir, train=True, download=True)
-    for img, img_label in data:
-        if img_label == label:
-            return img
-    else:
-        raise Exception("didn't find a matching label in the data")
-
-
-@beartype
 def main(
-    cifar_root_dir: str,
+    image_fpath: str,
     label: int,
     grid_size: int,
     scale_factor: float,
@@ -90,10 +79,13 @@ def main(
     batch_size: int,
     display_ims: bool,
 ) -> None:
-    img = load_first_cifar_image(cifar_root_dir=cifar_root_dir, label=label)
+    """evaluate image over grid of perturbations in two directions.
+    Saves (predictions,x_direction,y_direction,orig_img)"""
+
+    img = PIL.Image.open(image_fpath).resize(
+        (32, 32), PIL.Image.Resampling.LANCZOS
+    )
     model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
-    """ evaluate image over grid of perturbations in two directions.
-    Saves (predictions,x_direction,y_direction,orig_img) """
 
     model = model.eval()
     model.to(device)
@@ -134,7 +126,7 @@ def main(
         os.makedirs(plot_directory)
     data_fname = os.path.join(
         plot_directory,
-        f"predictionsAndDirs_mirror_label"
+        f"predictionsAndDirs_label"
         f"{label}_gridsize{grid_size}_sf{scale_factor}.pt",
     )
     torch.save(
@@ -182,15 +174,15 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
-        "--cifar_root_dir",
+        "--image_fpath",
         type=str,
-        help="root dir to find/store cifar10 dataset",
+        help="path to image. Will be resized to 32x32 if not already",
         required=True,
     )
     parser.add_argument(
         "--cifar_label",
         type=int,
-        help="cifar class label to pick image from",
+        help="expected cifar class label for image",
         required=True,
     )
     parser.add_argument(
@@ -250,7 +242,7 @@ if __name__ == "__main__":
         device = args.device
 
     main(
-        cifar_root_dir=args.cifar_root_dir,
+        image_fpath=args.image_fpath,
         label=args.cifar_label,
         grid_size=args.grid_size,
         scale_factor=args.scale_factor,
