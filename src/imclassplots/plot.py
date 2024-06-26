@@ -28,7 +28,7 @@ def plot_predictions(
     im_generation_fn: Optional[
         Callable[[float, float], PIL.Image.Image]
     ] = None,
-    scale_factor: float = 1.0,
+    scale_factor: Optional[float] = None,
 ) -> Figure:
 
     grid_size = predictions.shape[0]
@@ -86,6 +86,11 @@ def plot_predictions(
     ax0.format_coord = format_coord
 
     if display_ims:
+        if im_generation_fn is None or scale_factor is None:
+            raise ValueError(
+                "if display_ims is True, "
+                " then im_generation_fn and scale_factor must be provided"
+            )
         orig_im_arr = np.asarray(im_generation_fn(scale_a=0.0, scale_b=0.0))
         ax1.imshow(orig_im_arr)
 

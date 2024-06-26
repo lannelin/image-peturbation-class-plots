@@ -36,7 +36,6 @@ This repo currently relies on having weights for a resnet18 model trained on CIF
 
 TODO:
 
-- SCALE FACTOR for non 1.0 seems broken
 - documentation
 - further exploration of adversarial directions
 - drop lightning dep?

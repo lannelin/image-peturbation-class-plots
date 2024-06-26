@@ -155,6 +155,7 @@ def main(
         true_image_label=label,
         display_ims=display_ims,
         im_generation_fn=im_gen_fn,
+        scale_factor=scale_factor,
     )
     fig.savefig(figure_fname)
     print(f"saved figure at {figure_fname}")
