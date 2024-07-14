@@ -6,7 +6,10 @@ import numpy as np
 import PIL
 import torch
 from beartype import beartype
-from beartype.typing import Callable
+from beartype.typing import (
+    Callable,
+    Optional,
+)
 from jaxtyping import Float
 from jsonargparse import CLI
 from matplotlib import pyplot as plt
@@ -41,7 +44,9 @@ def main(
     true_label: int,
     grid_size: int,
     scale_factor: float,
-    model: torch.nn.Module,
+    model: Optional[torch.nn.Module],
+    model_fn: Optional[Callable[[], torch.nn.Module]],
+    model_fn_kwargs: Optional[dict],
     direction: str,
     batch_size: int,
     display_ims: bool,
@@ -54,6 +59,8 @@ def main(
         [Float[torch.Tensor, " dim1 dim2 dim3"]],
         Float[torch.Tensor, " dim1 dim2 dim3"],
     ],
+    dataset_imsize_x: int,
+    dataset_imsize_y: int,
     device: str = "cpu",
     random_seed: int = 42,
 ) -> None:
@@ -65,7 +72,9 @@ def main(
         true_label: expected class label of image. TODO what does this mean
         grid_size: size of grid (square)
         scale_factor: scale factor for peturbations
-        safetensors_fpath: path to safetensors for model
+        model: model to evaluate
+        model_fn: function to create model if model is not provided
+        model_fn_kwargs: kwargs for model_fn
         direction: method to pick xdirection: random or gradient
         batch_size: batch size
         display_ims: visualise images alongside plot
@@ -80,8 +89,15 @@ def main(
     seed_everything(random_seed)
 
     img = PIL.Image.open(image_fpath).resize(
-        (32, 32), PIL.Image.Resampling.LANCZOS
+        (dataset_imsize_x, dataset_imsize_y), PIL.Image.Resampling.LANCZOS
     )
+
+    if model is None:  # create model if not provided
+        if model_fn is None:
+            raise ValueError("model or model_fn must be provided")
+        if model_fn_kwargs is None:
+            model_fn_kwargs = {}
+        model = model_fn(**model_fn_kwargs)
 
     model = model.eval()
     model.to(device)

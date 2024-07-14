@@ -12,9 +12,9 @@ from jaxtyping import (
     Int,
     jaxtyped,
 )
-from lightning import Trainer
 from torch.utils.data import Dataset
 from torchvision import transforms
+from tqdm.auto import tqdm
 
 
 @jaxtyped(typechecker=beartype)
@@ -148,8 +148,9 @@ def peturb_and_predict(
         dataset, batch_size=batch_size, shuffle=False
     )
 
-    trainer = Trainer(accelerator=device, logger=False)
-    logits = trainer.predict(model=model, dataloaders=dataloader)
+    logits = list()
+    for batch in tqdm(dataloader):
+        logits.append(model(batch.to(device)).detach().cpu())
 
     # argmax then transpose so we align with x,y directions
     predictions = (

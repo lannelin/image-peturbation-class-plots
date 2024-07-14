@@ -1,5 +1,5 @@
 dataset_labels:
-  - airplane,
+  - airplane
   - automobile
   - bird
   - cat
@@ -22,3 +22,6 @@ dataset_transform:
     transforms:
       - class_path: torchvision.transforms.ToTensor
       - *normalize
+
+dataset_imsize_x: 32
+dataset_imsize_y: 32
