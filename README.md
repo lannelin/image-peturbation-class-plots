@@ -13,25 +13,28 @@ gradient-based x direction:
 
 
 
-
-generated with:
+generated with the following command (requires extra dep `pip install git+https://github.com/lannelin/cifar10-resnet-lightning`):
 ```bash
-python pixel_plot.py \
+python pixel_plot.py --config ./configs/cifar10.yaml \
     --image_fpath ./demo_images/horse.jpeg \
-    --label 7 \
+    --true_label 7 \
     --grid_size 20 \
     --scale_factor 1.0 \
-    --safetensors_fpath [/path/to/model.safetensors] \
     --display_ims true \
     --batch_size 32 \
-    --direction [random|gradient] \
-    --device auto
+    --direction [random | gradient] \
+    --device cpu \
+    --model.class_path lightning_resnet.resnet18.ResNet18 \
+    --model.safetensors_path PATH/TO/SAFETENSORS \
+    --model.num_classes 10
 ```
 
 (Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nicholas.carlini.com/slides/2023_adversarial_alignment.pdf)
 
 
-This repo currently relies on having weights for a resnet18 model trained on CIFAR10 as per https://github.com/lannelin/cifar10-resnet-lightning. The example image was generated using weights that can be found in the [0.3.0 release](https://github.com/lannelin/cifar10-resnet-lightning/releases/tag/v0.3.0) of that repo.
+This example relies on having weights for a resnet18 model trained on CIFAR10 as per https://github.com/lannelin/cifar10-resnet-lightning. The example image was generated using weights that can be found in the [0.3.0 release](https://github.com/lannelin/cifar10-resnet-lightning/releases/tag/v0.3.0) of that repo.
+
+The example is also tied to the CIFAR10 dataset and uses specific labels and transforms listed in `configs/cifar10.yaml`.
 
 
 
@@ -39,7 +42,6 @@ TODO:
 
 - documentation
 - further exploration of adversarial directions
-- drop lightning dep?
 
 install project
 
@@ -52,6 +54,8 @@ then:
 ```bash
 python pixel_plot.py --help
 ```
+
+(see example above for more info)
 
 ## dev
 

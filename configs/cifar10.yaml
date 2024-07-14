@@ -1,0 +1,24 @@
+dataset_labels:
+  - airplane,
+  - automobile
+  - bird
+  - cat
+  - deer
+  - dog
+  - frog
+  - horse
+  - ship
+  - truck
+
+dataset_normalize: &normalize
+  class_path: torchvision.transforms.Normalize
+  init_args:
+    mean: [0.4913725490196078, 0.4823529411764706, 0.4466666666666667]
+    std: [0.24705882352941178, 0.24352941176470588, 0.2615686274509804]
+
+dataset_transform:
+  class_path: torchvision.transforms.Compose
+  init_args:
+    transforms:
+      - class_path: torchvision.transforms.ToTensor
+      - *normalize

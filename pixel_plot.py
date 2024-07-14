@@ -1,26 +1,14 @@
-"""
-TODO improve this explanation
-downloads cifar 10
-loads model
-loads cifar image
-chooses random directions
-peturbs image
-runs through model
-plots predictions
-"""
-
 import os
+import random
 from functools import partial
 
+import numpy as np
 import PIL
 import torch
 from beartype import beartype
+from beartype.typing import Callable
+from jaxtyping import Float
 from jsonargparse import CLI
-from lightning import seed_everything
-from lightning.pytorch.trainer.connectors.accelerator_connector import (
-    _AcceleratorConnector,
-)
-from lightning_resnet.resnet18 import ResNet18
 from matplotlib import pyplot as plt
 from torchvision import transforms
 
@@ -35,50 +23,38 @@ from imclassplots.peturb import (
 )
 from imclassplots.plot import plot_predictions
 
-CIFAR_NORMALIZE = transforms.Normalize(
-    mean=[
-        0.4913725490196078,
-        0.4823529411764706,
-        0.4466666666666667,
-    ],
-    std=[
-        0.24705882352941178,
-        0.24352941176470588,
-        0.2615686274509804,
-    ],
-)
-CIFAR_TRANSFORM = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        CIFAR_NORMALIZE,
-    ]
-)
 
-CIFAR_CLASSES = [
-    "airplane",
-    "automobile",
-    "bird",
-    "cat",
-    "deer",
-    "dog",
-    "frog",
-    "horse",
-    "ship",
-    "truck",
-]
+def seed_everything(seed: int) -> None:
+    """Seed everything for reproducibility"""
+    random.seed(42)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 @beartype
 def main(
     image_fpath: str,
-    label: int,
+    true_label: int,
     grid_size: int,
     scale_factor: float,
-    safetensors_fpath: str,
+    model: torch.nn.Module,
     direction: str,
     batch_size: int,
     display_ims: bool,
-    device: str = "auto",
+    dataset_labels: list[str],
+    dataset_transform: Callable[
+        [PIL.Image.Image],
+        Float[torch.Tensor, " dim1 dim2 dim3"],
+    ],
+    dataset_normalize: Callable[
+        [Float[torch.Tensor, " dim1 dim2 dim3"]],
+        Float[torch.Tensor, " dim1 dim2 dim3"],
+    ],
+    device: str = "cpu",
     random_seed: int = 42,
 ) -> None:
     """Evaluate image over grid of perturbations in two directions and plot.
@@ -86,25 +62,26 @@ def main(
 
     Args:
         image_fpath: path to image. Will be resized to 32x32 if not already
-        label: expected class label of image. TODO what does this mean
+        true_label: expected class label of image. TODO what does this mean
         grid_size: size of grid (square)
         scale_factor: scale factor for peturbations
         safetensors_fpath: path to safetensors for model
         direction: method to pick xdirection: random or gradient
         batch_size: batch size
         display_ims: visualise images alongside plot
+        dataset_labels: labels used in classifier training
+        dataset_transform: transform used in classifier training
+        dataset_normalize: normalize used in classifier training
+            (typically as part of transform)
         device: device to run model on
         random_seed: seed for random number generator
     """
-    seed_everything(random_seed)
 
-    if device == "auto":
-        device = _AcceleratorConnector._choose_auto_accelerator()
+    seed_everything(random_seed)
 
     img = PIL.Image.open(image_fpath).resize(
         (32, 32), PIL.Image.Resampling.LANCZOS
     )
-    model = ResNet18(num_classes=10, safetensors_path=safetensors_fpath)
 
     model = model.eval()
     model.to(device)
@@ -117,8 +94,8 @@ def main(
         x_direction = get_gradient_based_direction(
             model=model,
             imtensor=transforms.ToTensor()(img),
-            normalize=CIFAR_NORMALIZE,
-            label=label,
+            normalize=dataset_normalize,
+            label=true_label,
             device=device,
         )
     else:
@@ -131,9 +108,9 @@ def main(
     predictions = peturb_and_predict(
         image=img,
         model=model,
-        label=label,
+        label=true_label,
         grid_size=grid_size,
-        data_transform=CIFAR_TRANSFORM,
+        data_transform=dataset_transform,
         x_direction=x_direction,
         y_direction=y_direction,
         device=device,
@@ -147,7 +124,7 @@ def main(
     data_fname = os.path.join(
         plot_directory,
         f"predictionsAndDirs_label"
-        f"{label}_gridsize{grid_size}_sf{scale_factor}.pt",
+        f"{true_label}_gridsize{grid_size}_sf{scale_factor}.pt",
     )
     torch.save(
         (predictions, x_direction, y_direction, transforms.ToTensor()(img)),
@@ -157,7 +134,7 @@ def main(
 
     figure_fname = os.path.join(
         plot_directory,
-        f"fig_{label}_gridsize{grid_size}_sf{scale_factor}.png",
+        f"fig_{true_label}_gridsize{grid_size}_sf{scale_factor}.png",
     )
 
     im_gen_fn = (
@@ -169,8 +146,8 @@ def main(
     )
     fig = plot_predictions(
         predictions=predictions,
-        class_labels=CIFAR_CLASSES,
-        true_image_label=label,
+        class_labels=dataset_labels,
+        true_image_label=true_label,
         display_ims=display_ims,
         im_generation_fn=im_gen_fn,
         scale_factor=scale_factor,
@@ -181,4 +158,4 @@ def main(
 
 
 if __name__ == "__main__":
-    CLI(main, as_positional=False)
+    CLI(main, as_positional=False, fail_untyped=False)
