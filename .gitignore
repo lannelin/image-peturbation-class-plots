@@ -161,6 +161,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+#vscode
+.vscode
+
 # image peturbation class plots
 cifar-10-batches-py
 cifar-10-python.tar.gz
