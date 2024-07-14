@@ -68,6 +68,8 @@ The example is also tied to the CIFAR10 dataset and uses specific labels and tra
 
 TODO:
 
+- rm unneeded from pyproject
+- more interesting demo ims
 - text spilling over in plot
 - documentation
 - further exploration of adversarial directions
