@@ -18,14 +18,14 @@ generated with:
 ```bash
 python pixel_plot.py \
     --image_fpath ./demo_images/horse.jpeg \
-    --cifar_label 7 \
+    --label 7 \
     --grid_size 20 \
     --scale_factor 1.0 \
-    --resnet_safetensors_fpath [/path/to/model.safetensors] \
-    --display_ims \
-    --device auto \
+    --safetensors_fpath [/path/to/model.safetensors] \
+    --display_ims true \
     --batch_size 32 \
-    --direction [random|gradient]
+    --direction [random|gradient] \
+    --device auto
 ```
 
 (Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nicholas.carlini.com/slides/2023_adversarial_alignment.pdf)

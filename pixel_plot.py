@@ -9,13 +9,13 @@ runs through model
 plots predictions
 """
 
-import argparse
 import os
 from functools import partial
 
 import PIL
 import torch
 from beartype import beartype
+from jsonargparse import CLI
 from lightning import seed_everything
 from lightning.pytorch.trainer.connectors.accelerator_connector import (
     _AcceleratorConnector,
@@ -76,12 +76,30 @@ def main(
     scale_factor: float,
     safetensors_fpath: str,
     direction: str,
-    device: str,
     batch_size: int,
     display_ims: bool,
+    device: str = "auto",
+    random_seed: int = 42,
 ) -> None:
-    """evaluate image over grid of perturbations in two directions.
-    Saves (predictions,x_direction,y_direction,orig_img)"""
+    """Evaluate image over grid of perturbations in two directions and plot.
+    Saves (predictions,x_direction,y_direction,orig_img)
+
+    Args:
+        image_fpath: path to image. Will be resized to 32x32 if not already
+        label: expected class label of image. TODO what does this mean
+        grid_size: size of grid (square)
+        scale_factor: scale factor for peturbations
+        safetensors_fpath: path to safetensors for model
+        direction: method to pick xdirection: random or gradient
+        batch_size: batch size
+        display_ims: visualise images alongside plot
+        device: device to run model on
+        random_seed: seed for random number generator
+    """
+    seed_everything(random_seed)
+
+    if device == "auto":
+        device = _AcceleratorConnector._choose_auto_accelerator()
 
     img = PIL.Image.open(image_fpath).resize(
         (32, 32), PIL.Image.Resampling.LANCZOS
@@ -163,95 +181,4 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        prog="Pixel Plot",
-        description="Plots CIFAR10 class predictions over peturbations"
-        " on given image",
-    )
-
-    parser.add_argument(
-        "--random_seed",
-        type=int,
-        default=42,
-        help="random seed",
-        required=False,
-    )
-    parser.add_argument(
-        "--image_fpath",
-        type=str,
-        help="path to image. Will be resized to 32x32 if not already",
-        required=True,
-    )
-    parser.add_argument(
-        "--cifar_label",
-        type=int,
-        help="expected cifar class label for image",
-        required=True,
-    )
-    parser.add_argument(
-        "--grid_size",
-        type=int,
-        default=20,
-        help="size of grid (square)",
-        required=True,
-    )
-    parser.add_argument(
-        "--scale_factor",
-        type=float,
-        help="scale factor for peturbations",
-        required=True,
-    )
-    parser.add_argument(
-        "--resnet_safetensors_fpath",
-        type=str,
-        help="path to .safetensors for "
-        "lightning_resnet.resnet18.ResNet18 model",
-        required=True,
-    )
-    parser.add_argument(
-        "--direction",
-        type=str,
-        help="method to pick xdirection: random or gradient",
-        required=True,
-    )
-    parser.add_argument(
-        "--device",
-        type=str,
-        help="device to run model on",
-        required=False,
-        default="auto",
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        help="batch size",
-        required=False,
-        default=1,
-    )
-    parser.add_argument(
-        "--display_ims",
-        action=argparse.BooleanOptionalAction,
-        help="visualise images in plot",
-    )
-
-    args = parser.parse_args()
-    display_ims = True if args.display_ims else False  # rather than None
-
-    seed_everything(args.random_seed)
-
-    if args.device == "auto":
-        device = _AcceleratorConnector._choose_auto_accelerator()
-    else:
-        device = args.device
-
-    main(
-        image_fpath=args.image_fpath,
-        label=args.cifar_label,
-        grid_size=args.grid_size,
-        scale_factor=args.scale_factor,
-        safetensors_fpath=args.resnet_safetensors_fpath,
-        direction=args.direction,
-        device=device,
-        batch_size=args.batch_size,
-        display_ims=display_ims,
-    )
+    CLI(main, as_positional=False)
