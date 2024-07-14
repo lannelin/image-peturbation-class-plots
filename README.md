@@ -5,11 +5,11 @@ Plots class predictions over peturbations of given image. X and Y axes describe 
 e.g. using model trained on CIFAR10
 
 random directions:
-![horse_deer_random](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/90a4090a-b7a0-4569-b58d-97d91d6326a3)
+![horse_deer_random](https://github.com/user-attachments/assets/d22004ac-4852-4f32-b5c4-951e7ac2798c)
 
 
 gradient-based x direction:
-![horse_deer_gradient](https://github.com/lannelin/image-peturbation-class-plots/assets/26149456/0e63aa8e-a2dc-4d78-b79a-29d13c0ec838)
+![horse_deer_gradient](https://github.com/user-attachments/assets/307e4e93-3471-4b05-9ccd-70b7b78ce8bb)
 
 
 
