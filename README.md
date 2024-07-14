@@ -10,6 +10,9 @@ Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nichola
 
 Using a stock torchvision model trained on ImageNet1k
 
+![image](https://github.com/user-attachments/assets/527b5018-9707-45c8-8c49-f90d6e274fc2)
+
+
 ```bash
 python pixel_plot.py --config ./configs/imagenet1k.yaml \
     --image_fpath ./demo_images/horse.jpeg \
@@ -65,6 +68,7 @@ The example is also tied to the CIFAR10 dataset and uses specific labels and tra
 
 TODO:
 
+- text spilling over in plot
 - documentation
 - further exploration of adversarial directions
 
