@@ -8,9 +8,12 @@ Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nichola
 
 ## ImageNet1k example
 
-Using a stock torchvision model trained on ImageNet1k:
+Using a stock torchvision model trained on ImageNet1k (image resized to 224x224).
 
-![image](https://github.com/user-attachments/assets/527b5018-9707-45c8-8c49-f90d6e274fc2)
+random directions: 
+
+![sorrel_redwolf_random_imagenet](https://github.com/user-attachments/assets/0bc7b116-c420-477b-8c39-e577cef7891c)
+
 
 
 ```bash
@@ -36,11 +39,13 @@ Using a custom model trained on CIFAR10 (image resized to 32x32):
 requires extra dep `pip install git+https://github.com/lannelin/cifar10-resnet-lightning`
 
 random directions:
-![horse_deer_random](https://github.com/user-attachments/assets/d22004ac-4852-4f32-b5c4-951e7ac2798c)
+![horse_deer_random](https://github.com/user-attachments/assets/87930fe1-572a-4d3b-8618-26d23e584ef6)
+
 
 
 gradient-based x direction:
-![horse_deer_gradient](https://github.com/user-attachments/assets/307e4e93-3471-4b05-9ccd-70b7b78ce8bb)
+![horse_deer_gradient](https://github.com/user-attachments/assets/e421a84b-ae8d-4329-bc4d-05e27620f215)
+
 
 
 ```bash
@@ -63,13 +68,14 @@ This example relies on having weights for a resnet18 model trained on CIFAR10 as
 
 The example is also tied to the CIFAR10 dataset and uses specific labels and transforms listed in `configs/cifar10.yaml`.
 
+Note the much lower scale_factor for this example. This gives us smaller peturbations.
+
 
 ## TODOs
 
 TODO:
 
 - rm unneeded from pyproject
-- more interesting demo ims
 - documentation
 - further exploration of adversarial directions
 
