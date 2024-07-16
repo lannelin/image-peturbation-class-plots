@@ -10,7 +10,7 @@ Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nichola
 
 Using a stock torchvision model trained on ImageNet1k (image resized to 224x224).
 
-random directions: 
+random directions:
 
 ![sorrel_redwolf_random_imagenet](https://github.com/user-attachments/assets/0bc7b116-c420-477b-8c39-e577cef7891c)
 
@@ -75,7 +75,6 @@ Note the much lower scale_factor for this example. This gives us smaller peturba
 
 TODO:
 
-- rm unneeded from pyproject
 - documentation
 - further exploration of adversarial directions
 
