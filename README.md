@@ -8,7 +8,7 @@ Inspired by diagram in slide 11 of Nicholas Carlini's talk here: https://nichola
 
 ## ImageNet1k example
 
-Using a stock torchvision model trained on ImageNet1k
+Using a stock torchvision model trained on ImageNet1k:
 
 ![image](https://github.com/user-attachments/assets/527b5018-9707-45c8-8c49-f90d6e274fc2)
 
@@ -31,7 +31,7 @@ The example is tied to the ImageNet1k dataset and uses specific labels and trans
 
 ## CIFAR10 example
 
-Using a custom model trained on CIFAR10
+Using a custom model trained on CIFAR10 (image resized to 32x32):
 
 requires extra dep `pip install git+https://github.com/lannelin/cifar10-resnet-lightning`
 
@@ -70,7 +70,6 @@ TODO:
 
 - rm unneeded from pyproject
 - more interesting demo ims
-- text spilling over in plot
 - documentation
 - further exploration of adversarial directions
 

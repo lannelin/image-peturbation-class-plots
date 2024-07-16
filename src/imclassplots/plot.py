@@ -36,14 +36,17 @@ def plot_predictions(
     # will modify predictions so clone
     predictions = predictions.clone()
 
+    # restrict class labels to first 8 chars if longer
+    char_limit = 8
+    class_labels = [
+        f"{label[:char_limit]}.." if len(label) > char_limit else label
+        for label in class_labels
+    ]
     class_map = OrderedDict(enumerate(class_labels))
     used_class_map = {k: v for k, v in class_map.items() if k in predictions}
 
     prediction_value_mapping = {
         val: i for i, val in enumerate(used_class_map.keys())
-    }
-    newval2classname = {
-        v: used_class_map[k] for k, v in prediction_value_mapping.items()
     }
 
     # inplace apply
@@ -91,6 +94,10 @@ def plot_predictions(
                 "if display_ims is True, "
                 " then im_generation_fn and scale_factor must be provided"
             )
+
+        newval2classname = {
+            v: used_class_map[k] for k, v in prediction_value_mapping.items()
+        }
         orig_im_arr = np.asarray(im_generation_fn(scale_a=0.0, scale_b=0.0))
         ax1.imshow(orig_im_arr)
 
@@ -131,4 +138,5 @@ def plot_predictions(
         # add callback for mouse moves
         fig.canvas.mpl_connect("button_press_event", onclick)
 
+    plt.tight_layout()
     return fig
