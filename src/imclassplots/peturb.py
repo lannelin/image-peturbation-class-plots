@@ -2,6 +2,7 @@ import math
 
 import PIL
 import torch
+import torch.nn.functional as F
 from beartype import beartype
 from beartype.typing import (
     Callable,
@@ -41,9 +42,7 @@ class PeturbationsDataset(Dataset):
         self.y_direction = y_direction
         self.scale_factor = scale_factor
         self.transform = transform
-        self.set_grid_geom(
-            num_peturbations=num_peturbations, x_length=x_length
-        )
+        self.set_grid_geom(num_peturbations=num_peturbations, x_length=x_length)
 
     def set_grid_geom(self, num_peturbations: int, x_length: Optional[int]):
         if x_length is None:
@@ -61,9 +60,7 @@ class PeturbationsDataset(Dataset):
         else:
             y_length = num_peturbations / x_length
             if not y_length.is_integer():
-                raise Exception(
-                    "num_peturbations must be divisible by x_length"
-                )
+                raise Exception("num_peturbations must be divisible by x_length")
 
         self.x_length = x_length
         # no need to store y_length
@@ -104,6 +101,7 @@ def peturb(
     a_peturb = (direction_a * scale_a).reshape(t.shape)
     b_peturb = (direction_b * scale_b).reshape(t.shape)
     t = (t + a_peturb + b_peturb).clip(0, 1)
+
     return transforms.ToPILImage()(t)
 
 
@@ -122,9 +120,12 @@ def peturb_and_predict(
     device: str,
     batch_size: int,
     scale_factor: float = 1.0,
-) -> Int[torch.Tensor, "{grid_size} {grid_size}"]:
+) -> tuple[
+    Int[torch.Tensor, " {grid_size} {grid_size}"],
+    Float[torch.Tensor, " {grid_size} {grid_size}"],
+]:
     """
-    returns: Tuple[predictions, x_direction, y_direction]
+    returns: predictions, loss
     """
 
     # sanity check
@@ -132,9 +133,7 @@ def peturb_and_predict(
         x = data_transform(image)
         scores = model(x.unsqueeze(0).to(device))
         prediction = torch.argmax(scores).detach().cpu()
-        assert (
-            prediction == label
-        ), f"test image: expected {label}, got {prediction}"
+        assert prediction == label, f"test image: expected {label}, got {prediction}"
 
     dataset = PeturbationsDataset(
         original_img=image,
@@ -148,15 +147,18 @@ def peturb_and_predict(
         dataset, batch_size=batch_size, shuffle=False
     )
 
-    logits = list()
-    for batch in tqdm(dataloader):
-        logits.append(model(batch.to(device)).detach().cpu())
+    logits_list = list()
+    for batch in tqdm(dataloader, "running peturbations through model"):
+        logits_list.append(model(batch.to(device)).detach().cpu())
+    logits = torch.vstack(logits_list)
 
     # argmax then transpose so we align with x,y directions
-    predictions = (
-        torch.argmax(torch.vstack(logits), dim=1)
+    predictions = torch.argmax(logits, dim=1).reshape((grid_size, grid_size)).T
+    target = torch.tensor([label])
+    loss = (
+        F.nll_loss(logits, target.tile(logits.shape[0]), reduction="none")
         .reshape((grid_size, grid_size))
         .T
     )
 
-    return predictions
+    return predictions, loss

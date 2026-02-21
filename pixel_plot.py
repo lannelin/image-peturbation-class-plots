@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 from functools import partial
@@ -17,6 +18,7 @@ from torchvision import transforms
 
 from imclassplots.directions import (
     get_gradient_based_direction,
+    get_hessian_eigenvectors,
     get_orthogonal_1d_direction,
     get_random_1d_direction,
 )
@@ -25,6 +27,8 @@ from imclassplots.peturb import (
     peturb_and_predict,
 )
 from imclassplots.plot import plot_predictions
+
+logging.basicConfig(level=logging.INFO)
 
 
 def seed_everything(seed: int) -> None:
@@ -75,7 +79,7 @@ def main(
         model: model to evaluate
         model_fn: function to create model if model is not provided
         model_fn_kwargs: kwargs for model_fn
-        direction: method to pick xdirection: random or gradient
+        direction: method to pick xdirection: random, gradient, hessian_eig
         batch_size: batch size
         display_ims: visualise images alongside plot
         dataset_labels: labels used in classifier training
@@ -106,22 +110,33 @@ def main(
     if direction == "random":
         im_size = img.height * img.width * len(img.getbands())
         x_direction = get_random_1d_direction(size=im_size)
+        y_direction = get_orthogonal_1d_direction(u=x_direction)
     elif direction == "gradient":
         x_direction = get_gradient_based_direction(
             model=model,
             imtensor=transforms.ToTensor()(img),
-            normalize=dataset_normalize,
+            normalize_fn=dataset_normalize,
             label=true_label,
             device=device,
         )
+        y_direction = get_orthogonal_1d_direction(u=x_direction)
+    elif direction == "hessian_eig":
+        hvps = get_hessian_eigenvectors(
+            model=model,
+            imtensor=transforms.ToTensor()(img),
+            normalize_fn=dataset_normalize,
+            label=true_label,
+            device=device,
+            top_k=2,
+        )
+        x_direction = hvps[0]
+        y_direction = hvps[1]
     else:
         raise ValueError(
-            f"direction must be random or gradient, not {direction}"
+            f"direction must be random gradient or hessian_eig, not {direction}"  # noqa: E501
         )
 
-    y_direction = get_orthogonal_1d_direction(u=x_direction)
-
-    predictions = peturb_and_predict(
+    predictions, loss = peturb_and_predict(
         image=img,
         model=model,
         label=true_label,
@@ -137,26 +152,14 @@ def main(
     plot_directory = "./plots"
     if not os.path.exists(plot_directory):
         os.makedirs(plot_directory)
-    data_fname = os.path.join(
-        plot_directory,
-        f"predictionsAndDirs_label"
-        f"{true_label}_gridsize{grid_size}_sf{scale_factor}.pt",
-    )
-    torch.save(
-        (predictions, x_direction, y_direction, transforms.ToTensor()(img)),
-        data_fname,
-    )
-    print(f"saved (predictions,x_direction,y_direction) tuple at {data_fname}")
 
     figure_fname = os.path.join(
         plot_directory,
-        f"fig_{true_label}_gridsize{grid_size}_sf{scale_factor}.png",
+        f"fig_label-{true_label}_gridsize-{grid_size}_sf-{scale_factor}_direction-{direction}.png",  # noqa: E501
     )
 
     im_gen_fn = (
-        partial(
-            peturb, img=img, direction_a=x_direction, direction_b=y_direction
-        )
+        partial(peturb, img=img, direction_a=x_direction, direction_b=y_direction)
         if display_ims
         else None
     )
@@ -167,10 +170,11 @@ def main(
         display_ims=display_ims,
         im_generation_fn=im_gen_fn,
         scale_factor=scale_factor,
+        loss=loss,
     )
+    plt.show()
     fig.savefig(figure_fname)
     print(f"saved figure at {figure_fname}")
-    plt.show()
 
 
 if __name__ == "__main__":

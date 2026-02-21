@@ -39,32 +39,40 @@ Using a custom model trained on CIFAR10 (image resized to 32x32):
 requires extra dep `pip install git+https://github.com/lannelin/cifar10-resnet-lightning`
 
 random directions:
-![horse_deer_random](https://github.com/user-attachments/assets/87930fe1-572a-4d3b-8618-26d23e584ef6)
+![horse_deer_random]((/demo_images/horse_deer_random.png)
 
 
 
 gradient-based x direction:
-![horse_deer_gradient](https://github.com/user-attachments/assets/e421a84b-ae8d-4329-bc4d-05e27620f215)
+![horse_deer_gradient]((/demo_images/horse_deer_gradient.png)
+
+
+hessian eigenvector-based x and y directions:
+![horse_deer_gradient]((/demo_images/horse_deer_hess-eig.png)
 
 
 
+random example generated on macbook with:
 ```bash
 python pixel_plot.py --config ./configs/cifar10.yaml \
     --image_fpath ./demo_images/horse.jpeg \
     --true_label 7 \
-    --grid_size 20 \
-    --scale_factor 1.0 \
+    --grid_size 100 \
+    --scale_factor 0.1 \
     --display_ims true \
     --batch_size 32 \
-    --direction [random | gradient] \
-    --device cpu \
+    --direction random \
+    --device mps \
     --model.class_path lightning_resnet.resnet18.ResNet18 \
     --model.safetensors_path PATH/TO/SAFETENSORS \
     --model.num_classes 10
 ```
 
 
-This example relies on having weights for a resnet18 model trained on CIFAR10 as per https://github.com/lannelin/cifar10-resnet-lightning. The example image was generated using weights that can be found in the [0.3.0 release](https://github.com/lannelin/cifar10-resnet-lightning/releases/tag/v0.3.0) of that repo.
+This example relies on having weights for a resnet18 model trained on CIFAR10 as per https://github.com/lannelin/cifar10-resnet-lightning. The example image was generated using weights that can be found in the [0.3.0 release](https://github.com/lannelin/cifar10-resnet-lightning/releases/tag/v0.3.0) of that repo. These can be downloaded with
+```bash
+wget https://github.com/lannelin/cifar10-resnet-lightning/releases/download/v0.3.0/resnet18-cifar10-86.4val.safetensors
+```
 
 The example is also tied to the CIFAR10 dataset and uses specific labels and transforms listed in `configs/cifar10.yaml`.
 
