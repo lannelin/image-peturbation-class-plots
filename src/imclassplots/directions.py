@@ -36,14 +36,14 @@ def get_orthogonal_1d_direction(
 @jaxtyped(typechecker=beartype)
 def get_gradient_based_direction(
     model: torch.nn.Module,
-    imtensor: Float[torch.Tensor, " dim1 dim2 dim3"],
+    imtensor: Float[torch.Tensor, " c h w"],
     normalize_fn: Callable[
-        [Float[torch.Tensor, " dim1 dim2 dim3"]],
-        Float[torch.Tensor, " dim1 dim2 dim3"],
+        [Float[torch.Tensor, " c h w"]],
+        Float[torch.Tensor, " c h w"],
     ],
     label: int,
     device: str,
-) -> Float[torch.Tensor, " dim4"]:
+) -> Float[torch.Tensor, " flatsize"]:
     """return (unit normed) gradient of loss wrt image"""
     model.eval()
 
@@ -62,20 +62,80 @@ def get_gradient_based_direction(
     return d / torch.linalg.norm(d)
 
 
+# compute hvp using autograd on cpu
+@jaxtyped(typechecker=beartype)
+def _calc_hvp(
+    data: Float[torch.Tensor, " batch c h w"],
+    grad: Float[torch.Tensor, " batch c h w"],
+    v: Float[torch.Tensor, " flatsize"],
+):
+    v_tensor = v.view_as(data)
+    hvp = torch.autograd.grad((grad * v_tensor).sum(), data, retain_graph=True)[0]
+    return hvp.detach().cpu().reshape(-1)
+
+
+@jaxtyped(typechecker=beartype)
+def _eigvec_power_iteration(
+    data: Float[torch.Tensor, " batch c h w"],
+    grad: Float[torch.Tensor, " batch c h w"],
+    n_power_iterations: int,
+    deflation_v: Float[torch.Tensor, " flatsize"] | None = None,
+    tol: float = 1e-9,
+):
+    """Power iteration to find top eigenvector of Hessian
+    optional deflation to find subsequent eigenvectors"""
+
+    v = torch.randn_like(grad).reshape(-1)
+    v_norm = torch.linalg.norm(v)
+    if v_norm < 1e-6:
+        raise ValueError("Random initialization has near-zero norm, try again")
+    if deflation_v is not None:
+        # Ensure initial orthogonality to deflation_v
+        v = v - (v * deflation_v).sum() * deflation_v
+    v = v / v_norm
+
+    lam_old = None
+    for _ in tqdm(range(n_power_iterations), desc="Power iteration steps"):
+        Hv = _calc_hvp(data=data, grad=grad, v=v)
+        if deflation_v is not None:
+            # Deflate: remove component along deflation_v each step
+            Hv = Hv - (Hv * deflation_v).sum() * deflation_v
+
+        v = Hv / torch.linalg.norm(Hv)
+
+        # estimate eigenvalue with Rayleigh quotient
+        # use for convergence check
+        Hv = _calc_hvp(data=data, grad=grad, v=v)
+        lam = (v * Hv).sum()
+
+        if lam_old is not None and torch.abs(lam - lam_old) < tol * (
+            1.0 + torch.abs(lam)
+        ):
+            break
+        lam_old = lam
+
+    Hv = _calc_hvp(data=data, grad=grad, v=v)
+    lam = (v * Hv).sum()
+    return lam.detach(), v.detach()
+
+
 @jaxtyped(typechecker=beartype)
 def get_hessian_eigenvectors(
     model: torch.nn.Module,
-    imtensor: Float[torch.Tensor, " dim1 dim2 dim3"],
+    imtensor: Float[torch.Tensor, " c h w"],
     normalize_fn: Callable[
-        [Float[torch.Tensor, " dim1 dim2 dim3"]],
-        Float[torch.Tensor, " dim1 dim2 dim3"],
+        [Float[torch.Tensor, " c h w"]],
+        Float[torch.Tensor, " c h w"],
     ],
     label: int,
     device: str,
     top_k: int = 2,
     n_power_iterations: int = 30,
-) -> Float[torch.Tensor, " {top_k} dim4"]:
+) -> Float[torch.Tensor, " {top_k} flatsize"]:
     """return top_k eigenvectors of hessian of loss wrt image"""
+    if top_k < 1 or top_k > 2:
+        raise ValueError("top_k must be 1 or 2")
+
     model.eval()
     imtensor = imtensor.unsqueeze(0).to(device)
     imtensor.requires_grad = True
@@ -85,64 +145,22 @@ def get_hessian_eigenvectors(
     loss = F.nll_loss(logits, target)
 
     grad = torch.autograd.grad(loss, imtensor, create_graph=True)[0].cpu()
-
-    # compute hvp using autograd on cpu
-    def calc_hvp(v):
-        v_tensor = v.view_as(imtensor)
-        hvp = torch.autograd.grad((grad * v_tensor).sum(), imtensor, retain_graph=True)[
-            0
-        ]
-        return hvp.detach().cpu().reshape(-1)
-
-    def eigvec_power_iteration(
-        deflation_v: Float[torch.Tensor, " dim4"] | None = None,
-        tol: float = 1e-9,
-    ):
-        """Power iteration to find top eigenvector of Hessian
-        optional deflation to find subsequent eigenvectors"""
-
-        v = torch.randn_like(grad).reshape(-1)
-        v_norm = torch.linalg.norm(v)
-        if v_norm < 1e-6:
-            raise ValueError("Random initialization has near-zero norm, try again")
-        if deflation_v is not None:
-            # Ensure initial orthogonality to deflation_v
-            v = v - (v * deflation_v).sum() * deflation_v
-        v = v / v_norm
-
-        lam_old = None
-        for _ in tqdm(range(n_power_iterations), desc="Power iteration steps"):
-            Hv = calc_hvp(v)
-            if deflation_v is not None:
-                # Deflate: remove component along deflation_v each step
-                Hv = Hv - (Hv * deflation_v).sum() * deflation_v
-
-            v = Hv / torch.linalg.norm(Hv)
-
-            # estimate eigenvalue with Rayleigh quotient
-            # use for convergence check
-            Hv = calc_hvp(v)
-            lam = (v * Hv).sum()
-
-            if lam_old is not None and torch.abs(lam - lam_old) < tol * (
-                1.0 + torch.abs(lam)
-            ):
-                break
-            lam_old = lam
-
-        Hv = calc_hvp(v)
-        lam = (v * Hv).sum()
-        return lam.detach(), v.detach()
-
-    if top_k == 1:
-        eigvecs = [eigvec_power_iteration()]
+    e1, v1 = _eigvec_power_iteration(
+        data=imtensor, grad=grad, n_power_iterations=n_power_iterations
+    )
+    eigvecs = [v1]
     if top_k == 2:
-        e1, v1 = eigvec_power_iteration()
-        e2, v2 = eigvec_power_iteration(v1)
+        e2, v2 = _eigvec_power_iteration(
+            data=imtensor,
+            grad=grad,
+            deflation_v=v1,
+            n_power_iterations=n_power_iterations,
+        )
         logger.info(
             f"top eigenvalue: {e1.item():.4f}, second eigenvalue: {e2.item():.4f}"
         )
-        eigvecs = [v1, v2]
+
+    eigvecs.append(v2)
 
     if top_k > 2:
         raise NotImplementedError("top_k > 2 not implemented yet")

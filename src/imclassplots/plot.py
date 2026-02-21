@@ -55,7 +55,6 @@ def plot_predictions(
 
     cmap = sns.color_palette(cc.glasbey, n)
     start = -grid_size // 2
-    # labels = list(range(start, start + grid_size))
 
     if display_ims:
         fig, (ax0, ax1, ax2, ax3) = plt.subplots(1, 4, figsize=(20, 7))

@@ -22,6 +22,7 @@ from imclassplots.directions import (
     get_orthogonal_1d_direction,
     get_random_1d_direction,
 )
+from imclassplots.model_utils import freeze_params
 from imclassplots.peturb import (
     peturb,
     peturb_and_predict,
@@ -104,6 +105,7 @@ def main(
         model = model_fn(**model_fn_kwargs)
 
     model = model.eval()
+    freeze_params(model)
     model.to(device)
 
     #  directions

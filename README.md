@@ -47,7 +47,7 @@ gradient-based x direction:
 ![horse_deer_gradient](/demo_images/horse_deer_gradient.png)
 
 
-hessian eigenvector-based x and y directions:
+hessian eigenvector-based x and y directions (NOTE: currently untested impl)
 ![horse_deer_gradient](/demo_images/horse_deer_hess-eig.png)
 
 
