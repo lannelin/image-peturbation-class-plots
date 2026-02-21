@@ -70,8 +70,8 @@ def plot_predictions(
         yticklabels=False,
         ax=ax0,
         square=True,
-        linecolor="black",
-        linewidths=2 / grid_size,
+        linecolor="#00000077",
+        linewidths=1 / grid_size,
     )
 
     colorbar = ax0.collections[0].colorbar

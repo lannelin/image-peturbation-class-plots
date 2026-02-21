@@ -39,16 +39,16 @@ Using a custom model trained on CIFAR10 (image resized to 32x32):
 requires extra dep `pip install git+https://github.com/lannelin/cifar10-resnet-lightning`
 
 random directions:
-![horse_deer_random]((/demo_images/horse_deer_random.png)
+![horse_deer_random](/demo_images/horse_deer_random.png)
 
 
 
 gradient-based x direction:
-![horse_deer_gradient]((/demo_images/horse_deer_gradient.png)
+![horse_deer_gradient](/demo_images/horse_deer_gradient.png)
 
 
 hessian eigenvector-based x and y directions:
-![horse_deer_gradient]((/demo_images/horse_deer_hess-eig.png)
+![horse_deer_gradient](/demo_images/horse_deer_hess-eig.png)
 
 
 
@@ -58,7 +58,7 @@ python pixel_plot.py --config ./configs/cifar10.yaml \
     --image_fpath ./demo_images/horse.jpeg \
     --true_label 7 \
     --grid_size 100 \
-    --scale_factor 0.1 \
+    --scale_factor 0.15 \
     --display_ims true \
     --batch_size 32 \
     --direction random \
