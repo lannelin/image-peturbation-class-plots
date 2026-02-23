@@ -66,6 +66,7 @@ def main(
     ],
     dataset_imsize_x: int,
     dataset_imsize_y: int,
+    log_softmax: bool = False,
     device: str = "cpu",
     random_seed: int = 42,
 ) -> None:
@@ -87,6 +88,9 @@ def main(
         dataset_transform: transform used in classifier training
         dataset_normalize: normalize used in classifier training
             (typically as part of transform)
+        log_softmax: whether to log softmax the model outputs before calc nll loss
+        dataset_imsize_x: width to resize image to
+        dataset_imsize_y: height to resize image to
         device: device to run model on
         random_seed: seed for random number generator
     """
@@ -120,6 +124,7 @@ def main(
             normalize_fn=dataset_normalize,
             label=true_label,
             device=device,
+            log_softmax=log_softmax,
         )
         y_direction = get_orthogonal_1d_direction(u=x_direction)
     elif direction == "hessian_eig":
@@ -130,6 +135,7 @@ def main(
             label=true_label,
             device=device,
             top_k=2,
+            log_softmax=log_softmax,
         )
         x_direction = hvps[0]
         y_direction = hvps[1]
@@ -149,6 +155,7 @@ def main(
         device=device,
         batch_size=batch_size,
         scale_factor=scale_factor,
+        log_softmax=log_softmax,
     )
 
     plot_directory = "./plots"

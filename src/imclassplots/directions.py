@@ -10,6 +10,8 @@ from jaxtyping import (
 )
 from tqdm.auto import tqdm
 
+from .model_utils import patch_pools
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,6 +45,7 @@ def get_gradient_based_direction(
     ],
     label: int,
     device: str,
+    log_softmax: bool = False,
 ) -> Float[torch.Tensor, " flatsize"]:
     """return (unit normed) gradient of loss wrt image"""
     model.eval()
@@ -52,6 +55,8 @@ def get_gradient_based_direction(
     x = normalize_fn(imtensor)
     logits = model(x)
     target = torch.tensor([label]).to(device)
+    if log_softmax:
+        logits = F.log_softmax(logits, dim=1)
     loss = F.nll_loss(logits, target)
     model.zero_grad()
     loss.backward()
@@ -131,17 +136,27 @@ def get_hessian_eigenvectors(
     device: str,
     top_k: int = 2,
     n_power_iterations: int = 30,
+    log_softmax: bool = False,
 ) -> Float[torch.Tensor, " {top_k} flatsize"]:
     """return top_k eigenvectors of hessian of loss wrt image"""
     if top_k < 1 or top_k > 2:
         raise ValueError("top_k must be 1 or 2")
 
     model.eval()
+
+    patch_pools(
+        model
+    )  # workaround to ensure maxpool layers backprop properly for hessian calculations
+
     imtensor = imtensor.unsqueeze(0).to(device)
     imtensor.requires_grad = True
     x = normalize_fn(imtensor)
     logits = model(x)
     target = torch.tensor([label]).to(device)
+
+    if log_softmax:
+        logits = F.log_softmax(logits, dim=1)
+
     loss = F.nll_loss(logits, target)
 
     grad = torch.autograd.grad(loss, imtensor, create_graph=True)[0].cpu()

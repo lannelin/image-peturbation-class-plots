@@ -120,6 +120,7 @@ def peturb_and_predict(
     device: str,
     batch_size: int,
     scale_factor: float = 1.0,
+    log_softmax: bool = False,
 ) -> tuple[
     Int[torch.Tensor, " {grid_size} {grid_size}"],
     Float[torch.Tensor, " {grid_size} {grid_size}"],
@@ -151,6 +152,9 @@ def peturb_and_predict(
     for batch in tqdm(dataloader, "running peturbations through model"):
         logits_list.append(model(batch.to(device)).detach().cpu())
     logits = torch.vstack(logits_list)
+
+    if log_softmax:
+        logits = F.log_softmax(logits, dim=1)
 
     # argmax then transpose so we align with x,y directions
     predictions = torch.argmax(logits, dim=1).reshape((grid_size, grid_size)).T
