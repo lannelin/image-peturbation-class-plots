@@ -12,22 +12,22 @@ Using a stock torchvision model trained on ImageNet1k (image resized to 224x224)
 
 random directions:
 
-![sorrel_redwolf_random_imagenet](https://github.com/user-attachments/assets/0bc7b116-c420-477b-8c39-e577cef7891c)
-
+![sorrel_redwolf_random_imagenet](/demo_images/sorrel_redwolf_random_imagenet.png)
 
 
 ```bash
 python pixel_plot.py --config ./configs/imagenet1k.yaml \
     --image_fpath ./demo_images/horse.jpeg \
     --true_label 339 \
-    --grid_size 20 \
-    --scale_factor 10.0 \
+    --grid_size 100 \
+    --scale_factor 2.0 \
     --display_ims true \
     --batch_size 32 \
     --direction random \
     --device mps \
     --model_fn torchvision.models.inception.inception_v3 \
-    --model_fn_kwargs.pretrained true
+    --model_fn_kwargs.pretrained true \
+    --log_softmax true
 ```
 
 The example is tied to the ImageNet1k dataset and uses specific labels and transforms listed in `configs/imagenet1k.yaml`.
@@ -78,13 +78,28 @@ The example is also tied to the CIFAR10 dataset and uses specific labels and tra
 
 Note the much lower scale_factor for this example. This gives us smaller peturbations.
 
+## Supported Directions
+
+### "random"
+
+Two uniformly random directions in pixel space. The first direction is randomly sampled from a normal distribution and normalized. The second direction is orthogonal to the first.
+
+### "gradient"
+
+The x direction is the gradient of the loss with respect to the image (i.e., the direction of steepest increase in loss away from the true class). This points towards adversarial perturbations. The y direction is orthogonal to the gradient.
+
+### "hessian_eig"
+
+The x and y directions are the top two eigenvectors of the Hessian matrix of the loss with respect to the image. These are computed using power iteration, and represent the directions of maximum and second-maximum curvature of the loss landscape.
+
 
 ## TODOs
 
 TODO:
 
-- documentation
 - further exploration of adversarial directions
+    - average hessian-eig around sample
+        - how stable will this be? how quickly will eigenvectors rotate as we move away from sample?
 
 ## Install
 
