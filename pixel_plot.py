@@ -176,6 +176,7 @@ def main(
         predictions=predictions,
         class_labels=dataset_labels,
         true_image_label=true_label,
+        direction=direction,
         display_ims=display_ims,
         im_generation_fn=im_gen_fn,
         scale_factor=scale_factor,
